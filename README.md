@@ -1,49 +1,26 @@
-# sample-scheduler-extender
+# Network Aware Scheduling in Kubernetes
 
-A sample to showcase how to create a k8s scheduler extender.
+The Kuberenets Scheduler is part of the controlplane that helps schedule pods to appropriate nodes.
+The Scheduler uses two processes to find the best node for a pod to be scheduled. The two steps are filtering and scoring. 
+- Filtering : The scheduler finds a node that is meets the requirements requested by the user.
+- Scoring : In order to find the best node, a scoring mechanism is used to select the best-fit
 
-## UPDATE on 2020.6.10
+While the Kubernetes Scheduler takes CPU and memory into account, studies have shown that network resources are expensive resources that would should also be considered. In this project, we have configured the default scheduler to take network resources into account. 
 
-Switch go module, and wire dependencies to k8s.io/*:v0.18.3.
-
-For a fresh cloned repo, run `go mod vendor` and `go build -o main *.go` to compile the main binary.
-
-## [TODO] Running with a Kubeadm env
-
-
-## [TODO] Running with a hack-local env (for dev)
-
-Make following changes on hack/local-up-cluster.sh
-
-```diff
-diff --git a/hack/local-up-cluster.sh b/hack/local-up-cluster.sh
-index 8a59190..8dbec17 100755
---- a/hack/local-up-cluster.sh
-+++ b/hack/local-up-cluster.sh
-@@ -834,7 +834,7 @@ function start_kubescheduler {
-     ${CONTROLPLANE_SUDO} "${GO_OUT}/hyperkube" scheduler \
-       --v=${LOG_LEVEL} \
-       --leader-elect=false \
--      --kubeconfig "${CERT_DIR}"/scheduler.kubeconfig \
-+      --config /root/config/scheduler-config.yaml \
-       --feature-gates="${FEATURE_GATES}" \
-       --master="https://${API_HOST}:${API_SECURE_PORT}" >"${SCHEDULER_LOG}" 2>&1 &
-     SCHEDULER_PID=$!
 ```
-
+    spec:
+      hostNetwork: true
+      schedulerName: my-scheduler
+      containers:
+      - name: img-python
+        image: stevekim01310/kimjangbak:image
+        imagePullPolicy: IfNotPresent
+        stdin: true
+        tty: true
+        ports:
+        - containerPort: 5000
+      restartPolicy: Always
+```
 ## Notes
 
-- Prioritize webhook won't be triggered if it's running on an one-node cluster. As it makes no sense to run priorities logic when there is only one candidate:
-
-```go
-// from k8s.io/kubernetes/pkg/scheduler/core/generic_scheduler.go
-func (g *genericScheduler) Schedule(pod *v1.Pod, nodeLister algorithm.NodeLister) (string, error) {
-    ...
-	// When only one node after predicate, just use it.
-	if len(filteredNodes) == 1 {
-		metrics.SchedulingAlgorithmPriorityEvaluationDuration.Observe(metrics.SinceInMicroseconds(startPriorityEvalTime))
-		return filteredNodes[0].Name, nil
-    }
-    ...
-}
-```
+- More than one node is required for the scheduler to work. 
