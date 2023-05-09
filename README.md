@@ -10,7 +10,7 @@ While the Kubernetes Scheduler takes CPU and memory into account, studies have s
 ```
     spec:
       hostNetwork: true
-      schedulerName: my-scheduler
+      ===schedulerName: my-scheduler===
       containers:
       - name: img-python
         image: stevekim01310/kimjangbak:image
